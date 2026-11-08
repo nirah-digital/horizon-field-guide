@@ -1,0 +1,164 @@
+---
+/**
+ * A stronghold's fortress, top-down, from its BaseLayout JSON ({ b, o, d }).
+ * Every building wears a short label as well as its colour.
+ */
+import { buildingById } from '../lib/game'
+
+interface Props {
+  layout: { b: { k: string; l: number; x: number; y: number }[]; o?: unknown[][]; d?: unknown[][] }
+  title: string
+}
+const { layout, title } = Astro.props
+
+const COLOR: Record<string, string> = {
+  core: '#eda100',
+  defense: '#2a78d6',
+  army: '#eb6834',
+  resource: '#008300',
+  trade: '#e87ba4',
+  builder: '#1baf7a',
+  wall: '#5d554b',
+  trap: '#e34948',
+}
+const SHORT: Record<string, string> = {
+  townHall: 'K',
+  cannon: 'C',
+  arrowTower: 'T',
+  mortar: 'M',
+  ballista: 'B',
+  castle: 'Bs',
+  granary: 'G',
+  storehouse: 'S',
+  farm: 'F',
+  lumberCamp: 'Sw',
+  quarry: 'Q',
+  ironMine: 'Mi',
+  market: 'Mk',
+  barracks: 'Br',
+  stable: 'St',
+  siegeWorkshop: 'W',
+  armyCamp: 'Ca',
+  academy: 'Ac',
+  builderHut: 'H',
+}
+const OBST: Record<string, number> = { rock2: 3, forest1: 3, forest2: 3 }
+
+const items = layout.b.map((b) => {
+  const def = buildingById(b.k)
+  return { ...b, size: def?.size ?? 2, cat: def?.category ?? 'core', name: def?.name ?? b.k }
+})
+// Frame the fortress: its buildings plus a margin; scenery only where it falls inside.
+const M = 2
+const minX = Math.min(...items.map((b) => b.x)) - M
+const minY = Math.min(...items.map((b) => b.y)) - M
+const maxX = Math.max(...items.map((b) => b.x + b.size)) + M
+const maxY = Math.max(...items.map((b) => b.y + b.size)) + M
+const w = maxX - minX
+const h = maxY - minY
+const obstacles = (layout.o ?? [])
+  .map((o) => ({ kind: String(o[0]), x: Number(o[1]), y: Number(o[2]), size: OBST[String(o[0])] ?? 2 }))
+  .filter((o) => o.x >= minX && o.y >= minY && o.x + o.size <= maxX && o.y + o.size <= maxY)
+const T = 14
+const legend = [...new Set(items.map((b) => b.cat))]
+const NAMES: Record<string, string> = { core: 'Keep', defense: 'Defences', army: 'Army', resource: 'Resources', trade: 'Market', builder: 'Houses', wall: 'Walls', trap: 'Traps' }
+---
+
+<figure class="fortress">
+  <svg viewBox={`0 0 ${w * T} ${h * T}`} role="img" aria-label={`${title}: the fortress from above`}>
+    <rect width={w * T} height={h * T} fill="#b9d58c" rx="6"></rect>
+    {
+      Array.from({ length: w + 1 }, (_, i) => (
+        <line x1={i * T} x2={i * T} y1="0" y2={h * T} stroke="rgba(0,0,0,0.05)" stroke-width="0.6" />
+      ))
+    }
+    {
+      Array.from({ length: h + 1 }, (_, i) => (
+        <line y1={i * T} y2={i * T} x1="0" x2={w * T} stroke="rgba(0,0,0,0.05)" stroke-width="0.6" />
+      ))
+    }
+    {
+      obstacles.map((o) => (
+        <rect
+          x={(o.x - minX) * T + 2}
+          y={(o.y - minY) * T + 2}
+          width={o.size * T - 4}
+          height={o.size * T - 4}
+          rx="5"
+          fill={o.kind.includes('rock') || o.kind.includes('Rock') ? '#a59d8f' : '#5f8f3e'}
+          opacity="0.75"
+        >
+          <title>{o.kind}</title>
+        </rect>
+      ))
+    }
+    {
+      items.map((b) => (
+        <g>
+          <rect
+            x={(b.x - minX) * T + (b.size === 1 ? 1 : 2)}
+            y={(b.y - minY) * T + (b.size === 1 ? 1 : 2)}
+            width={b.size * T - (b.size === 1 ? 2 : 4)}
+            height={b.size * T - (b.size === 1 ? 2 : 4)}
+            rx={b.size === 1 ? 2 : 4}
+            fill={COLOR[b.cat] ?? '#888'}
+          >
+            <title>{`${b.name}, level ${b.l}`}</title>
+          </rect>
+          {b.size > 1 && (
+            <text x={(b.x - minX + b.size / 2) * T} y={(b.y - minY + b.size / 2) * T + 4} text-anchor="middle" class="fortress-label">
+              {SHORT[b.k] ?? '?'}
+              {b.l}
+            </text>
+          )}
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption class="legend">
+    {
+      legend.map((c) => (
+        <span>
+          <i style={`background:${COLOR[c]}`} />
+          {NAMES[c] ?? c}
+        </span>
+      ))
+    }
+  </figcaption>
+</figure>
+
+<style>
+  .fortress {
+    margin: 0;
+  }
+  .fortress svg {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+    border: 2px solid var(--walnut);
+    border-radius: 8px;
+  }
+  .fortress-label {
+    font: 800 9px var(--body);
+    fill: #fff;
+    paint-order: stroke;
+    stroke: rgba(0, 0, 0, 0.35);
+    stroke-width: 1.5px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 5px;
+  }
+</style>

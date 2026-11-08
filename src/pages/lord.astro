@@ -1,0 +1,189 @@
+---
+import Cost from '../components/Cost.astro'
+import Layout from '../layouts/Layout.astro'
+import Looks from '../components/Looks.astro'
+import { art, buildingById, buildingSlug, duration, keepLevels, lady, lord, num, troopLooks, troopSlug, troops, url } from '../lib/game'
+
+const hall = buildingById('hall')!
+
+const caps = lord.capByKeep as Record<string, number>
+const totalGold = lord.levels.reduce((s, l) => s + ((l.researchCost as Record<string, number>).gold ?? 0), 0)
+const totalIron = lord.levels.reduce((s, l) => s + ((l.researchCost as Record<string, number>).iron ?? 0), 0)
+const totalTime = lord.levels.reduce((s, l) => s + l.researchSeconds, 0)
+const pct = (x: number) => `${Math.round(x * 100)}%`
+---
+
+<Layout title="The Lord" description={`The Lord in Horizon: your hero on a white charger. ${lord.maxLevel} levels, the Rally! war cry, and how to train him.`} crumbs={[['Wiki', ''], ['The Lord', 'lord/']]} image={art('cards/lord.webp')}>
+  <div class="two-col">
+    <article>
+      <h1>The Lord</h1>
+      <p class="lede">{lord.description}</p>
+
+      <p>
+        The Lord joins your kingdom when the Keep reaches level {lord.unlockKeep}. He rides into one battle at a time, deployed from the troop bar
+        like any troop, but he is never trained in the Barracks and takes no space in your Camps. You train <em>him</em> instead — level by level, with gold and iron, from
+        the Army window.
+      </p>
+
+      <h2>Rally!</h2>
+      <p>
+        Once he is ashore, the Lord can sound <strong>Rally!</strong> a single time each battle. Every ally within reach is healed at once, marches
+        {lord.rallySpeed}× as fast and strikes {lord.rallyHaste}× as fast for a few seconds — and the Lord, steeled by his own cry, takes only {pct(lord.rallyGuard)}
+        of the damage dealt to him while it lasts.
+      </p>
+
+      <h2>Resting</h2>
+      <p>
+        After a battle the Lord rests — longer the harder he was hit: up to {lord.restMinutesWorst[0]} minutes at level 1 and {lord.restMinutesWorst[lord.restMinutesWorst.length - 1]} at
+        level {lord.maxLevel} after the worst of fights. Gems wake him early. He never needs rest after a stronghold.
+      </p>
+
+      <h2>How far he can grow</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Keep level</th>
+              {keepLevels.map((k) => <th class="num">{k}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Highest Lord level</td>
+              {keepLevels.map((k) => <td class="num">{caps[String(k)] || '—'}</td>)}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Levels</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">Level</th>
+              <th class="num">Keep</th>
+              <th class="num">Health</th>
+              <th class="num">Damage</th>
+              <th>Training</th>
+              <th class="num">Time</th>
+              <th class="num">Rally heals</th>
+              <th class="num">Rally reach</th>
+              <th class="num">Haste</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              lord.levels.map((l, k) => {
+                const r = lord.rally[k]
+                const keep = keepLevels.find((x) => (caps[String(x)] ?? 0) >= l.level)
+                return (
+                  <tr>
+                    <td class="num">
+                      <strong>{l.level}</strong>
+                    </td>
+                    <td class="num">{keep}</td>
+                    <td class="num">{num(l.hp)}</td>
+                    <td class="num">{num(l.damage, 1)}</td>
+                    <td>
+                      <Cost cost={l.researchCost} free="—" />
+                    </td>
+                    <td class="num">{l.researchSeconds ? duration(l.researchSeconds) : '—'}</td>
+                    <td class="num">{pct(r.heal)}</td>
+                    <td class="num">{num(r.radius, 2)} tiles</td>
+                    <td class="num">{num(r.hasteSeconds, 1)}s</td>
+                  </tr>
+                )
+              })
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">
+        Rally heals = share of each ally's full health given back at once. Haste = how long the rallied army moves and strikes faster. From level 1 to {lord.maxLevel}: {num(totalGold)} gold, {num(totalIron)} iron and {duration(totalTime)} of training.
+      </p>
+      <Looks kind="troop" items={troopLooks(lord, 'The Lord')} />
+
+      <p><a href={url(`troops/${troopSlug(troops[0])}/`)}>Meet the troops he leads →</a></p>
+
+      {
+        lady && (
+          <>
+            <h2 id="lady">The Lady</h2>
+            <p>{lady.description}</p>
+            <p>
+              She joins when the <a href={url(`buildings/${buildingSlug(hall)}/`)}>Hall</a> reaches level {lady.unlockHall} (Keep {lady.unlockKeep}) and grows to level{' '}
+              {lady.maxLevel}. Like the Lord she is trained level by level, never in the Barracks, and takes no space in your Camps. Her <strong>Banner!</strong> flies once a
+              battle: allies near her take only {pct(lady.banner[0].taken)} of the damage dealt to them for a few seconds, and she looses {lady.bannerVolley} arrows a shot meanwhile.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="num">Level</th>
+                    <th class="num">Hall</th>
+                    <th class="num">Health</th>
+                    <th class="num">Damage</th>
+                    <th>Training</th>
+                    <th class="num">Time</th>
+                    <th class="num">Banner reach</th>
+                    <th class="num">Banner flies</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lady.levels.map((l, k) => (
+                    <tr>
+                      <td class="num">
+                        <strong>{l.level}</strong>
+                      </td>
+                      <td class="num">{lady.capByHall.findIndex((c) => c >= l.level)}</td>
+                      <td class="num">{num(l.hp)}</td>
+                      <td class="num">{num(l.damage, 1)}</td>
+                      <td>
+                        <Cost cost={l.researchCost} free="—" />
+                      </td>
+                      <td class="num">{l.researchSeconds ? duration(l.researchSeconds) : '—'}</td>
+                      <td class="num">{num(lady.banner[k].radius, 1)} tiles</td>
+                      <td class="num">{num(lady.banner[k].seconds, 1)}s</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Looks kind="troop" sub heading="How she looks" items={troopLooks(lady, 'The Lady')} />
+          </>
+        )
+      }
+
+    </article>
+
+    <aside class="panel infobox">
+      <img class="card-img" src={art('cards/lord.webp')} alt="The Lord" width="360" height="480" />
+      <dl class="facts">
+        <dt>Joins at</dt>
+        <dd>Keep {lord.unlockKeep}</dd>
+        <dt>Levels</dt>
+        <dd>{lord.maxLevel}</dd>
+        <dt>Speed</dt>
+        <dd>{lord.speed} tiles/s</dd>
+        <dt>Strikes every</dt>
+        <dd>{lord.attackInterval}s</dd>
+        <dt>Goes for</dt>
+        <dd>Defences first</dd>
+        <dt>From arrows</dt>
+        <dd>takes {pct(lord.arrowTaken)}</dd>
+        <dt>Health at max</dt>
+        <dd>{num(lord.levels[lord.levels.length - 1].hp)}</dd>
+      </dl>
+    </aside>
+  </div>
+</Layout>
+
+<style>
+  .card-img {
+    width: 100%;
+    border-radius: 10px;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+</style>

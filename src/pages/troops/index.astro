@@ -1,0 +1,45 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { PREF, art, buildingName, troopSlug, troops, url } from '../../lib/game'
+
+const byTrainer = ['barracks', 'stable', 'siegeWorkshop'].map((t) => ({ trainer: t, items: troops.filter((x) => x.trainer === t) }))
+---
+
+<Layout title="Troops" description="Every troop in Horizon — swordsmen, archers, knights, rams, trebuchets, monks, elephants and more — with health, damage, training costs and research for every level." crumbs={[['Wiki', ''], ['Troops', 'troops/']]}>
+  <h1>Troops</h1>
+  <p class="lede">
+    Train troops at the Barracks, the Stable and the Workshop; they wait in your Camps until you march. The Academy makes them stronger, one level at a time. And at the head of
+    every army rides <a href={url('lord/')}>the Lord</a>.
+  </p>
+
+  {
+    byTrainer.map((g) => (
+      <section>
+        <h2>Trained at the {buildingName(g.trainer)}</h2>
+        <div class="grid">
+          {g.items.map((t) => (
+            <a class="card troop-card" href={url(`troops/${troopSlug(t)}/`)}>
+              <img class="troop-art" src={art(`cards/${t.key}.webp`)} alt={t.name} loading="lazy" width="360" height="480" />
+              <h3>{t.name}</h3>
+              <p>{t.description.split('. ')[0]}.</p>
+              <div class="chips">
+                <span class="chip">{t.space} space</span>
+                <span class="chip">{PREF[t.pref]}</span>
+                {t.trainerLevel > 1 && <span class="chip gold">{buildingName(t.trainer)} {t.trainerLevel}</span>}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</Layout>
+
+<style>
+  .troop-art {
+    border-radius: 10px;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    width: 100%;
+  }
+</style>

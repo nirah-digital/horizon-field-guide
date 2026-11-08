@@ -1,0 +1,180 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { EMBLEMS, LEAGUES, art, game, num, url } from '../lib/game'
+import { trophyOffer as offer } from '../lib/trophies'
+
+const diffs = [-400, -200, -100, 0, 100, 200, 400]
+---
+
+<Layout title="Leagues, Trophies & Emblems" description="How trophies, leagues, shields, emblems and achievements work in Horizon — with the game's exact trophy formula." crumbs={[['Wiki', ''], ['Ranks', 'ranks/']]}>
+  <h1>Leagues, trophies and honours</h1>
+  <p class="lede">Raid other lords online to win trophies; fend off their raids to keep them. Trophies set your league, and the realm's best wear its emblems.</p>
+
+  <h2 id="leagues">Leagues</h2>
+  <div class="leagues">
+    {
+      LEAGUES.map((l, i) => (
+        <div class="league">
+          <img src={art(`leagues/${l.id}.webp`)} alt="" width="72" height="72" loading="lazy" />
+          <strong>{l.name}</strong>
+          <span class="muted small">{LEAGUES[i + 1] ? `${num(l.from)}–${num(LEAGUES[i + 1].from - 1)}` : `${num(l.from)}+`} trophies</span>
+          {l.tiers.length > 0 && <span class="small">III {num(l.tiers[0])} · II {num(l.tiers[1])} · I {num(l.tiers[2])}</span>}
+          <span class="small">3-star bonus: {num(l.gold)} gold + {num(l.goods)} goods</span>
+        </div>
+      ))
+    }
+  </div>
+
+  <p>
+    Each league from Copper to Royal has three tiers, <strong>III → II → I</strong>, a step every 100 to 270 trophies. Fall below a step's floor and you drop back.
+    Every online raid you win also pays a <strong>league bonus</strong> from the realm, on top of what you carry off: the amounts above for three stars at tier III,
+    10% more at tier II and 20% more at tier I, and a third of it per star. In the game, <em>Top Lords › Ladder</em> shows where you stand and what's next.
+  </p>
+
+  <h2 id="raids">Who you meet</h2>
+  <p>
+    A search finds a lord near your trophies whose Keep is within one level of yours, who isn't shielded, isn't under attack and isn't playing right
+    now. Lords raid you the same way: from Keep 2, any lord near your trophies may come for your goods — your defences fight them on their own, and
+    the defence log keeps the replay.
+  </p>
+
+  <h2 id="trophies">Winning and losing trophies</h2>
+  <p>
+    Before you attack, the game shows what's at stake: trophies to <strong>win</strong> if you take all three stars, and trophies to <strong>lose</strong> if you
+    take none. A lord with more trophies than you is worth more and costs you less. Fewer than three stars win a share: one star a third, two stars two thirds.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>They have…</th>
+          {diffs.map((d) => <th class="num">{d > 0 ? `+${d}` : d === 0 ? 'the same' : d}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>You win (3 stars)</td>
+          {diffs.map((d) => <td class="num">+{offer(1000, 1000 + d).win}</td>)}
+        </tr>
+        <tr>
+          <td>You lose (0 stars)</td>
+          {diffs.map((d) => <td class="num">−{offer(1000, 1000 + d).loss}</td>)}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">
+    Win = 30 + (their trophies − yours) ÷ 10, between 10 and 60. Lose = 12 − (their − yours) ÷ 15, between 4 and 24. The defender loses what you win; when they fend you off,
+    they gain four fifths of what you lose. A search for an opponent costs 50 gold per Keep level.
+  </p>
+
+  <h2 id="shields">Shields</h2>
+  <p>
+    A raid that destroys <strong>30%</strong> of your kingdom gives you a <strong>12-hour shield</strong>; <strong>90%</strong> or more, a <strong>16-hour shield</strong>. While shielded,
+    no lord can find you. A kingdom under attack is locked for a few minutes so two lords can't raid it at once, and nobody can raid a lord who is playing right now.
+  </p>
+  <div class="callout">
+    <strong>What raiders take.</strong> Half of what sits uncollected in your producers, a fifth of what your storages hold, a tenth of the Keep's store, and a tenth of your gold. Collect often, and keep your storages behind your walls.
+  </div>
+
+  <h2 id="seasons">Seasons</h2>
+  <p>
+    The realm runs in monthly seasons, ending on the last Monday of each month at 08:00 (Riyadh). When a season ends:
+  </p>
+  <ul>
+    <li><strong>Board emblems</strong> go to whoever holds the top places — dated with the season, and yours for good. On the trophy board, first place needs the Legend League (2,800+), the top 3 the Royal League (2,000+) and the top 10 the Gold League (1,400+); a place nobody qualifies for stays empty. The Raider and Defender boards count that season only, with 30 wins at least.</li>
+    <li><strong>Gems</strong> for every lord by the league they finish in: Copper 20, Bronze 40, Silver 80, Gold 150, Royal 250, Legend 400.</li>
+    <li><strong>Trophies above 2,000</strong> are halved toward 2,000 for the new season (2,600 → 2,300).</li>
+  </ul>
+
+  <h2 id="emblems">Emblems</h2>
+  <p>Honours the realm gives its lords, shown on their profile, beside their name on the boards and in chat (the one they pick is their tag). Board emblems are given at a season's end (see <a href="#seasons">seasons</a>), and are never taken away.</p>
+  <p class="small muted">The leaderboards (and their emblems) open once enough lords are playing; until then the game says "The leaderboards open soon". Your trophies and league count from day one.</p>
+  <div class="grid">
+    {
+      EMBLEMS.map((e) => (
+        <div class="card emblem">
+          <img src={art(`emblems/${e.id}.webp`)} alt="" width="64" height="64" loading="lazy" />
+          <div>
+            <h3>{e.name}</h3>
+            <p>{e.how}</p>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+
+  <h2 id="achievements">Achievements</h2>
+  <p>Long goals with gems at every tier. Open them from <em>Awards</em> in the game.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Achievement</th>
+          <th>Bronze</th>
+          <th>Silver</th>
+          <th>Gold</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          game.achievements.map((a) => (
+            <tr>
+              <td>
+                <strong>{a.title}</strong>
+              </td>
+              {a.tiers.map((t) => (
+                <td>
+                  {t.goal}
+                  <span class="gems">
+                    <img src={art('icons/gems.webp')} alt="gems" width="16" height="16" /> {t.gems}
+                  </span>
+                </td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">In all: {num(game.achievements.reduce((s, a) => s + a.tiers.reduce((x, t) => x + t.gems, 0), 0))} gems. See also the <a href={url('strongholds/')}>strongholds</a>, which pay gems for their third stars.</p>
+</Layout>
+
+<style>
+  .leagues {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .league {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+    background: #fbf6e8;
+    border: 2px solid var(--parchment-3);
+    border-radius: 12px;
+    padding: 12px 8px;
+  }
+  .emblem {
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+  }
+  .emblem h3 {
+    margin: 0;
+  }
+  .gems {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 6px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .gems img {
+    width: 16px;
+    height: 16px;
+  }
+</style>

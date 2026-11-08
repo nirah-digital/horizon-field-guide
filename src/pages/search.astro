@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { url } from '../lib/game'
+
+const bundle = url('pagefind/')
+---
+
+<Layout title="Search" description="Search the Horizon wiki: buildings, troops, strongholds, leagues and more." crumbs={[['Wiki', ''], ['Search', 'search/']]}>
+  <h1>Search the wiki</h1>
+  <div id="search" class="search-box" data-bundle={bundle}></div>
+  <noscript><p>Search needs JavaScript. Every page is also linked from the menu above.</p></noscript>
+  <link href={`${bundle}pagefind-ui.css`} rel="stylesheet" />
+  <script is:inline define:vars={{ bundle }}>
+    const s = document.createElement('script')
+    s.src = `${bundle}pagefind-ui.js`
+    s.onload = () => {
+      // eslint-disable-next-line no-undef
+      const ui = new PagefindUI({ element: '#search', bundlePath: bundle, showSubResults: true, resetStyles: false, translations: { placeholder: 'Cannon, knight, Ravenhold…' } })
+      const q = new URLSearchParams(location.search).get('q')
+      if (q) ui.triggerSearch(q)
+    }
+    s.onerror = () => {
+      document.getElementById('search').textContent = 'The search index is built with the site (npm run build); it is not available in dev.'
+    }
+    document.head.appendChild(s)
+  </script>
+</Layout>

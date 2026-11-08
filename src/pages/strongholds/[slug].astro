@@ -1,0 +1,173 @@
+---
+import Cost from '../../components/Cost.astro'
+import FortressMap from '../../components/FortressMap.astro'
+import Layout from '../../layouts/Layout.astro'
+import { ROMAN, type Stronghold, art, buildingById, chapters, strongholdSlug, strongholds, troopByKey, troopSlug, url } from '../../lib/game'
+
+export function getStaticPaths() {
+  return strongholds.map((s) => ({ params: { slug: strongholdSlug(s) }, props: { s } }))
+}
+
+const { s } = Astro.props as { s: Stronghold }
+const ch = chapters[s.chapter]
+const prev = strongholds[s.index - 1]
+const next = strongholds[s.index + 1]
+const defences = s.layout.b
+  .map((b) => buildingById(b.k))
+  .filter((d) => d && (d.category === 'defense' || d.category === 'trap'))
+  .reduce<Record<string, number>>((m, d) => ({ ...m, [d!.name]: (m[d!.name] ?? 0) + 1 }), {})
+const walls = s.layout.b.filter((b) => b.k === 'wall').length
+const share = ['First star', 'Second star', 'Third star']
+---
+
+<Layout
+  title={s.name}
+  description={`${s.name}, stronghold ${ROMAN[s.chapter]}-${s.number} of Horizon's campaign (${ch.title}). ${s.intro}`}
+  crumbs={[['Wiki', ''], ['Strongholds', 'strongholds/'], [`${ROMAN[s.chapter]}. ${ch.title}`, `strongholds/#chapter-${s.chapter + 1}`]]}
+>
+  <div class="two-col">
+    <article>
+      <p class="kicker">Chapter {ROMAN[s.chapter]} · Stronghold {s.number} of 6 {s.boss && <span class="chip gold">{ch.foe}</span>}</p>
+      <h1>{s.name}</h1>
+      <p class="quote">{s.intro}</p>
+
+      <h2>Your company</h2>
+      <p class="small muted">
+        The same every time — your own army stays at home. Troops at level {s.troopLevel}{s.army.lord ? `, the Lord at level ${s.lordLevel}` : ''}.
+        {s.beach && ' Troops may only land on the beach.'}
+      </p>
+      <div class="company">
+        {
+          Object.entries(s.army).map(([k, n]) => {
+            const t = troopByKey(k)!
+            return (
+              <a class="unit" href={t.hero ? url('lord/') : url(`troops/${troopSlug(t)}/`)}>
+                <img src={art(`portraits/${t.key}.webp`)} alt="" width="72" height="72" loading="lazy" />
+                <strong>{n as number}×</strong> {t.name}
+              </a>
+            )
+          })
+        }
+      </div>
+
+      <h2>The fortress</h2>
+      <FortressMap layout={s.layout} title={s.name} />
+      <p class="small">
+        Keep level {s.keep}. Defences: {
+          Object.entries(defences)
+            .map(([n, c]) => `${c} ${n.toLowerCase()}${c > 1 ? 's' : ''}`)
+            .join(', ') || 'none'
+        }{walls ? `; ${walls} wall pieces` : ''}. Stronghold defences fight with their classic numbers, a little gentler than the same defences in a lord's kingdom.
+      </p>
+
+      <h2>Rewards</h2>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            {
+              s.rewards.map((r, k) => (
+                <tr>
+                  <td>
+                    <strong>{share[k]}</strong>
+                  </td>
+                  <td>
+                    <Cost cost={r} />
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">Each star pays once, the first time you win it. Winning three stars at once pays all three.</p>
+
+      <details class="spoiler">
+        <summary>Captain Maren's hint (spoiler)</summary>
+        <div class="hint">
+          <img src={art('portraits/maren.webp')} alt="Captain Maren" width="64" height="64" />
+          <p>{s.hint}</p>
+        </div>
+      </details>
+      <details class="spoiler">
+        <summary>After the victory (spoiler)</summary>
+        <p class="quote">{s.outro}</p>
+      </details>
+
+      <nav class="pager">
+        {prev ? <a href={url(`strongholds/${strongholdSlug(prev)}/`)}>← {prev.name}</a> : <span />}
+        {next ? <a href={url(`strongholds/${strongholdSlug(next)}/`)}>{next.name} →</a> : <span />}
+      </nav>
+    </article>
+
+    <aside class="panel infobox">
+      <h3 style="margin-top: 0">{ROMAN[s.chapter]}. {ch.title}</h3>
+      <ol class="toc">
+        {
+          strongholds
+            .filter((x) => x.chapter === s.chapter)
+            .map((x) => (
+              <li>
+                {x.index === s.index ? <strong>{x.name}</strong> : <a href={url(`strongholds/${strongholdSlug(x)}/`)}>{x.name}</a>}
+              </li>
+            ))
+        }
+      </ol>
+    </aside>
+  </div>
+</Layout>
+
+<style>
+  .kicker {
+    font-weight: 800;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    margin: 0 0 4px;
+  }
+  .company {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    color: inherit;
+    background: #fbf6e8;
+    border: 2px solid var(--parchment-3);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14.5px;
+  }
+  .unit img {
+    border-radius: 50%;
+    background: #e7d6ac;
+  }
+  .hint {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 8px;
+  }
+  .hint img {
+    border-radius: 50%;
+    flex: none;
+  }
+  .toc {
+    padding-left: 22px;
+    margin: 0;
+  }
+  .toc li {
+    margin: 4px 0;
+  }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 36px;
+    font-weight: 700;
+  }
+</style>

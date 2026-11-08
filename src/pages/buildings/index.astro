@@ -1,0 +1,39 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { CATEGORY, buildingArt, buildingSlug, buildings, url } from '../../lib/game'
+
+const groups = Object.entries(CATEGORY)
+  .sort((a, b) => a[1].order - b[1].order)
+  .map(([id, c]) => ({ id, ...c, items: buildings.filter((b) => b.category === id) }))
+  .filter((g) => g.items.length)
+---
+
+<Layout title="Buildings" description="Every building in Horizon — the Keep, houses, producers, storages, the market, army buildings, defences, walls and traps — with costs, build times and stats for every level." crumbs={[['Wiki', ''], ['Buildings', 'buildings/']]}>
+  <h1>Buildings</h1>
+  <p class="lede">Your kingdom grows around the Keep. Raising the Keep unlocks more of each building and higher levels; every villager in a house builds one thing at a time.</p>
+
+  {
+    groups.map((g) => (
+      <section>
+        <h2 id={g.id}>{g.name}</h2>
+        <p class="muted">{g.blurb}</p>
+        <div class="grid">
+          {g.items.map((b) => (
+            <a class="card" href={url(`buildings/${buildingSlug(b)}/`)}>
+              <div class="card-art">
+                <img src={buildingArt(b)} alt={b.name} loading="lazy" />
+              </div>
+              <h3>{b.name}</h3>
+              <p>{b.description.split('. ')[0]}.</p>
+              <div class="chips">
+                <span class="chip">{b.size}×{b.size}</span>
+                <span class="chip">Keep {b.unlockKeep}+</span>
+                {b.levels.length > 1 && <span class="chip gold">{b.levels.length} levels</span>}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</Layout>

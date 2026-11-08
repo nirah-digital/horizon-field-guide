@@ -1,0 +1,149 @@
+---
+import Cost from '../components/Cost.astro'
+import Layout from '../layouts/Layout.astro'
+import { GEM_PACKS, INVITES, STARTER_PACK, art, duration, game, num, strongholds, url } from '../lib/game'
+
+const campaignGems = strongholds.reduce((s, x) => s + (x.rewards[2].gems ?? 0), 0)
+const achievementGems = game.achievements.reduce((s, a) => s + a.tiers.reduce((x, t) => x + t.gems, 0), 0)
+---
+
+<Layout title="Gems" description="Gems in Horizon: how to earn them, what they buy, the gem packs and the Starter Pack, gifts for friends and invite rewards." crumbs={[['Wiki', ''], ['Gems', 'gems/']]}>
+  <div class="intro">
+    <img src={art('icons/gems.webp')} alt="" width="84" height="84" />
+    <div>
+      <h1>Gems</h1>
+      <p class="lede">The kingdom's rubies. They hurry things along — they never buy what can't be won by playing.</p>
+    </div>
+  </div>
+
+  <h2>Earning gems</h2>
+  <ul>
+    <li><strong>Your first day:</strong> every new kingdom starts with 250 gems, and Captain Maren's guide ends with 250 more.</li>
+    <li><strong>Strongholds:</strong> the third star of every stronghold pays gems — {num(campaignGems)} across all {strongholds.length}. <a href={url('strongholds/')}>See them</a>.</li>
+    <li><strong>Achievements:</strong> {num(achievementGems)} gems across all tiers. <a href={url('ranks/#achievements')}>See them</a>.</li>
+    <li><strong>The daily gift:</strong> come back every day — days 3, 6 and 7 of the week's streak pay gems. <a href="#daily">See the gifts</a>.</li>
+    <li><strong>The steward's orders:</strong> three small tasks a day, with gems and gold for each.</li>
+    <li><strong>Clearing the land:</strong> trees, bushes and rocks sometimes hide a gem or two.</li>
+    <li><strong>Friends:</strong> invite rewards and gifts, below.</li>
+  </ul>
+
+  <h2>What gems buy</h2>
+  <p>
+    Mostly time: finishing a building, an upgrade, training or research at once. The longer the wait, the more it costs — but less per hour the longer it is.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Time left</th>
+          {game.gemsForTime.map((g) => <th class="num">{duration(g.seconds)}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Gems to finish now</td>
+          {game.gemsForTime.map((g) => <td class="num">{num(g.gems)}</td>)}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Gems also build <strong>more houses</strong> — each house is home to one more villager, so one more thing can be built at once:{' '}
+    {game.houses.gemPrice.map((g, i) => `house ${i + 1}: ${g ? `${num(g)} gems` : 'free'}`).join(', ')} — {game.houses.max} at most. And they wake <a href={url('lord/')}>the Lord</a> early after a hard battle.
+  </p>
+
+  <h2>Gem packs</h2>
+  <p>Prices are set by the App Store and Google Play in your own currency. Watch for gem-pack events: while one is on, every gem pack pays a bonus share of gems on top.</p>
+  <div class="grid">
+    {
+      GEM_PACKS.map((p) => (
+        <div class="card pack">
+          <img src={art('icons/gems.webp')} alt="" width="48" height="48" />
+          <h3>{p.name}</h3>
+          <p class="display" style="font-size: 26px; color: var(--walnut)">{num(p.gems)} gems</p>
+          <p class="small">Can be sent as a gift</p>
+        </div>
+      ))
+    }
+    <div class="card pack starter">
+      <img src={art('icons/shop.webp')} alt="" width="48" height="48" />
+      <h3>{STARTER_PACK.name}</h3>
+      <p class="display" style="font-size: 26px; color: var(--walnut)">{num(STARTER_PACK.gems)} gems</p>
+      <p class="small">plus <Cost cost={STARTER_PACK.goods} /></p>
+      <p class="small">Once per store account</p>
+    </div>
+  </div>
+
+  <h2 id="daily">The daily gift</h2>
+  <p>
+    Tap <strong>Daily</strong> on the home screen once a day for a chest from the treasurer. Seven days make a streak, and every day of it pays more; miss a day and the streak
+    starts again from day 1. The goods grow with your Keep (the gems don't). A new day begins at midnight UTC.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Keep 1</th>
+          <th>Keep 3</th>
+          <th>Keep 6</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          game.dailyGift['1'].map((_, d) => (
+            <tr>
+              <td>
+                <strong>Day {d + 1}</strong>
+              </td>
+              {(['1', '3', '6'] as const).map((k) => (
+                <td>
+                  <Cost cost={game.dailyGift[k][d]} />
+                </td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="gifts">Gifts for a friend</h2>
+  <p>
+    Any gem pack except the Starter Pack can be bought as a gift for another lord, with a short note. Their gems arrive in their mailbox, and you earn the
+    <em>Benefactor</em> emblem.
+  </p>
+
+  <h2 id="invites">Inviting friends</h2>
+  <p>
+    Every lord has an invite code in the game. A friend who enters yours within their first {INVITES.days} days gets <strong>{INVITES.welcomeGems} gems</strong> at once. You
+    get gems as they grow: {INVITES.milestones.map((m, i) => <span>{i > 0 && ' and '}<strong>{num(m.gems)}</strong> when their Keep reaches {m.keep}</span>)} — for up to {INVITES.maxFriends} friends. Three friends who
+    earned you rewards bring the <em>Recruiter</em> emblem.
+  </p>
+
+  <div class="callout blue">
+    Something went wrong with a purchase? Open <strong>Settings › About › Write to the team</strong> in the game, or visit <a href="https://nirah.co/legal/support">support</a>. Every
+    lord gets an answer.
+  </div>
+</Layout>
+
+<style>
+  .intro {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+  .pack {
+    align-items: center;
+    text-align: center;
+  }
+  .pack h3 {
+    margin: 6px 0 0;
+  }
+  .pack p {
+    margin: 2px 0;
+  }
+  .starter {
+    border-color: var(--gold);
+  }
+</style>

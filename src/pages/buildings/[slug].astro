@@ -1,0 +1,269 @@
+---
+import Cost from '../../components/Cost.astro'
+import Layout from '../../layouts/Layout.astro'
+import Looks from '../../components/Looks.astro'
+import {
+  CATEGORY,
+  RES_LABEL,
+  SHOT,
+  type Building,
+  art,
+  buildingArt,
+  buildingLooks,
+  buildingSlug,
+  buildings,
+  duration,
+  game,
+  keepLevels,
+  maxLevelAtKeep,
+  num,
+  totalCost,
+  troopSlug,
+  troops,
+  url,
+  type Res,
+} from '../../lib/game'
+
+export function getStaticPaths() {
+  return buildings.map((b) => ({ params: { slug: buildingSlug(b) }, props: { b } }))
+}
+
+const { b } = Astro.props as { b: Building }
+const L = b.levels
+const max = L[L.length - 1]
+const isDefense = b.category === 'defense'
+const isTrap = b.category === 'trap'
+const isProducer = !!b.produces
+const hasCapacity = L.some((l) => l.capacity > 0)
+const hasHousing = L.some((l) => l.housing > 0)
+const trains = troops.filter((t) => t.trainer === b.id)
+const total = totalCost(L)
+const NODE: Record<string, string> = { trees: 'trees and groves', food: 'berry bushes', stone: 'stone', iron: 'iron ore', gold: 'gold veins' }
+const stores = (b.stores as string[]).map((r) => RES_LABEL[r as Res])
+const i = buildings.indexOf(b)
+const prev = buildings[i - 1]
+const next = buildings[i + 1]
+---
+
+<Layout
+  title={b.name}
+  description={`${b.name} in Horizon: ${b.description} ${L.length} levels, unlocked at Keep ${b.unlockKeep}.`}
+  crumbs={[['Wiki', ''], ['Buildings', 'buildings/'], [CATEGORY[b.category].name, `buildings/#${b.category}`]]}
+  image={buildingArt(b)}
+>
+  <div class="two-col">
+    <article>
+      <h1>{b.name}</h1>
+      <p class="lede">{b.description}</p>
+
+      {
+        isProducer && (
+          <p>
+            Produces <strong>{RES_LABEL[b.produces as Res]}</strong> every hour into its own store, which you collect by tapping it.
+            {b.bonusFrom && <> Each patch of {NODE[b.bonusFrom] ?? b.bonusFrom} within reach makes it work faster.</>}
+          </p>
+        )
+      }
+      {stores.length > 0 && b.id !== 'townHall' && <p>Stores <strong>{stores.join(', ')}</strong>. Raiders take a share of what is inside, so build more than one and keep them behind your walls.</p>}
+      {
+        isDefense && (
+          <>
+            <p>
+              Fires {SHOT[b.shot ?? ''] ?? 'shots'}
+              {b.volley > 1 && <> — volleys at {b.volley} targets at once</>}. {b.aiming}
+            </p>
+            <div class="callout blue">
+              <strong>Targeting.</strong> You choose, per defence, whom it shoots at first:{' '}
+              {game.targetModes.map((m, k) => (
+                <>
+                  {k > 0 && '; '}
+                  <em>{m.label}</em> ({m.hint.toLowerCase()})
+                </>
+              ))}
+              .
+            </div>
+          </>
+        )
+      }
+      {
+        trains.length > 0 && (
+          <p>
+            Trains:{' '}
+            {trains.map((t, k) => (
+              <>
+                {k > 0 && ', '}
+                <a href={url(`troops/${troopSlug(t)}/`)}>{t.name}</a>
+                {t.trainerLevel > 1 && <span class="muted"> (level {t.trainerLevel})</span>}
+              </>
+            ))}
+            .
+          </p>
+        )
+      }
+      {b.id === 'builderHut' && (
+        <p>
+          Each house is home to one villager, and every villager builds, upgrades or clears one thing at a time. You start with two; more cost gems:{' '}
+          {game.houses.gemPrice
+            .slice(2)
+            .map((g, k) => `house ${k + 3}: ${num(g)} gems`)
+            .join(', ')}
+          . At most {game.houses.max}.
+        </p>
+      )}
+
+      <h2>How many you can build</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Keep level</th>
+              {keepLevels.map((k) => <th class="num">{k}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Count</td>
+              {keepLevels.map((k) => <td class="num">{b.countByKeep[k - 1] || '—'}</td>)}
+            </tr>
+            <tr>
+              <td>Highest level</td>
+              {keepLevels.map((k) => <td class="num">{maxLevelAtKeep(b, k) || '—'}</td>)}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Levels</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">Level</th>
+              <th class="num">Keep</th>
+              <th>Cost</th>
+              <th class="num">Time</th>
+              <th class="num">Health</th>
+              {isProducer && <th class="num">Per hour</th>}
+              {hasCapacity && <th class="num">{isProducer ? 'Holds' : 'Capacity'}</th>}
+              {hasHousing && <th class="num">Housing</th>}
+              {(isDefense || isTrap) && <th class="num">Damage</th>}
+              {isDefense && <th class="num">Per second</th>}
+              <th class="num">XP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              L.map((l) => (
+                <tr>
+                  <td class="num">
+                    <strong>{l.level}</strong>
+                  </td>
+                  <td class="num">{l.keep}</td>
+                  <td>
+                    <Cost cost={l.cost} />
+                  </td>
+                  <td class="num">{duration(l.seconds)}</td>
+                  <td class="num">{num(l.hp)}</td>
+                  {isProducer && <td class="num">{num(l.rate)}</td>}
+                  {hasCapacity && <td class="num">{num(l.capacity)}</td>}
+                  {hasHousing && <td class="num">{num(l.housing)}</td>}
+                  {(isDefense || isTrap) && <td class="num">{num(l.damage, 1)}</td>}
+                  {isDefense && <td class="num">{num(l.dps * (b.volley || 1), 1)}</td>}
+                  <td class="num">{num(l.xp)}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">
+        Keep = the Keep level needed. Time is with no speed-ups. XP is what you earn when the work finishes.
+        {isDefense && b.volley > 1 && ` Per second counts all ${b.volley} arrows of a volley.`}
+      </p>
+      {
+        L.length > 1 && (
+          <p>
+            <strong>Everything, from level 1 to {L.length}:</strong> <Cost cost={total} /> and {duration(L.reduce((s, l) => s + l.seconds, 0))} of work.
+          </p>
+        )
+      }
+
+      <Looks kind="building" items={buildingLooks(b)} />
+
+      <nav class="pager">
+        {prev ? <a href={url(`buildings/${buildingSlug(prev)}/`)}>← {prev.name}</a> : <span />}
+        {next ? <a href={url(`buildings/${buildingSlug(next)}/`)}>{next.name} →</a> : <span />}
+      </nav>
+    </article>
+
+    <aside class="panel infobox">
+      <div class="infobox-art">
+        <img src={buildingArt(b)} alt={b.name} />
+      </div>
+      <dl class="facts">
+        <dt>Kind</dt>
+        <dd>{CATEGORY[b.category].name}</dd>
+        <dt>Size</dt>
+        <dd>
+          {b.size} × {b.size} tiles
+        </dd>
+        <dt>Unlocks at</dt>
+        <dd>
+          Keep {b.unlockKeep}
+        </dd>
+        <dt>Levels</dt>
+        <dd>{L.length}</dd>
+        <dt>Most you can have</dt>
+        <dd>{Math.max(...b.countByKeep)}</dd>
+        {
+          isDefense && (
+            <>
+              <dt>Range</dt>
+              <dd>
+                {max.minRange > 0 ? `${max.minRange}–` : ''}
+                {max.range} tiles
+              </dd>
+              <dt>Fires every</dt>
+              <dd>{max.interval}s</dd>
+              {max.splash > 0 && (
+                <>
+                  <dt>Blast</dt>
+                  <dd>{max.splash} tiles</dd>
+                </>
+              )}
+            </>
+          )
+        }
+        {
+          isTrap && (
+            <>
+              <dt>Triggers within</dt>
+              <dd>{max.trigger} tiles</dd>
+              <dt>Blast</dt>
+              <dd>{max.splash} tiles</dd>
+            </>
+          )
+        }
+        {
+          isProducer && (
+            <>
+              <dt>Makes</dt>
+              <dd>{RES_LABEL[b.produces as Res]}</dd>
+            </>
+          )
+        }
+        <dt>Health at max</dt>
+        <dd>{num(max.hp)}</dd>
+      </dl>
+    </aside>
+  </div>
+</Layout>
+
+<style>
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 36px;
+    font-weight: 700;
+  }
+</style>

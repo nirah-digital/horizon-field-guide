@@ -1,0 +1,120 @@
+---
+import '../styles/global.css'
+import { art, url } from '../lib/game'
+
+interface Props {
+  title: string
+  description: string
+  /** Breadcrumbs above the title: [label, path]. */
+  crumbs?: [string, string][]
+  image?: string
+  /** Skip the page wrapper (the home page draws its own hero). */
+  bare?: boolean
+}
+
+const { title, description, crumbs = [], image = art('og.jpg'), bare = false } = Astro.props
+const fullTitle = title === 'Horizon Wiki' ? 'Horizon Wiki — the kingdom’s field guide' : `${title} · Horizon Wiki`
+const canonical = new URL(Astro.url.pathname, Astro.site).href
+const ogImage = new URL(image, Astro.site).href
+const here = Astro.url.pathname
+
+const NAV: [string, string][] = [
+  ['Guide', 'guide/'],
+  ['Buildings', 'buildings/'],
+  ['Troops', 'troops/'],
+  ['The Lord', 'lord/'],
+  ['Strongholds', 'strongholds/'],
+  ['The Keep', 'keep/'],
+  ['Ranks', 'ranks/'],
+  ['Market', 'market/'],
+  ['Gems', 'gems/'],
+  ['What\'s new', 'whats-new/'],
+  ['FAQ', 'faq/'],
+  ['Search', 'search/'],
+]
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" sizes="32x32" href={url('favicon-32.png')} />
+    <link rel="apple-touch-icon" href={url('apple-touch-icon.png')} />
+    <meta name="theme-color" content="#0f1a35" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Horizon Wiki" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="apple-itunes-app" content="app-id=6817408049" />
+    <link rel="sitemap" href={url('sitemap-index.xml')} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito+Sans:opsz,wght@6..12,400;6..12,700;6..12,800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <a class="sr-only" href="#main">Skip to the content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href={url()} aria-label="Horizon Wiki home">
+          <img src={art('logo.webp')} alt="Horizon" width="107" height="46" />
+          <span>Wiki</span>
+        </a>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
+        <nav class="nav" id="site-nav" aria-label="Wiki sections">
+          {NAV.map(([label, path]) => <a href={url(path)} aria-current={here.startsWith(url(path)) ? 'page' : undefined}>{label}</a>)}
+        </nav>
+      </div>
+    </header>
+
+    {
+      bare ? (
+        <main id="main">
+          <slot />
+        </main>
+      ) : (
+        <main id="main" class="page" data-pagefind-body>
+          {crumbs.length > 0 && (
+            <nav class="crumbs" aria-label="Breadcrumbs">
+              {crumbs.map(([label, path], i) => (
+                <>
+                  {i > 0 && ' › '}
+                  <a href={url(path)}>{label}</a>
+                </>
+              ))}
+            </nav>
+          )}
+          <slot />
+        </main>
+      )
+    }
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <strong class="display" style="color: var(--gold-light); font-size: 18px">Horizon</strong> — a game by{' '}
+          <a href="https://nirah.co/">Nirah Digital</a>. The numbers on this wiki come straight from the game's rules.
+        </div>
+        <div>
+          <a href="https://nirah.co/legal/support">Support</a> · <a href="https://nirah.co/legal/privacy">Privacy</a> ·{' '}
+          <a href="https://nirah.co/legal/terms">Terms</a> · © 2026 Nirah Digital
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle')
+      const nav = document.getElementById('site-nav')
+      toggle?.addEventListener('click', () => {
+        const open = nav?.classList.toggle('open') ?? false
+        toggle.setAttribute('aria-expanded', String(open))
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+---
+import { RES_LABEL, art, costEntries, num, type Res } from '../lib/game'
+
+interface Props {
+  cost: Partial<Record<string, number>> | undefined
+  /** Text when nothing is due. */
+  free?: string
+}
+const { cost, free = 'free' } = Astro.props
+const parts = costEntries(cost)
+---
+
+{
+  parts.length === 0 ? (
+    <span class="free">{free}</span>
+  ) : (
+    <span class="cost">
+      {parts.map(([r, n]) => (
+        <span class="cost-part" title={RES_LABEL[r as Res]}>
+          <img src={art(`icons/${r}.webp`)} alt={RES_LABEL[r as Res]} width="18" height="18" loading="lazy" />
+          {num(n)}
+        </span>
+      ))}
+    </span>
+  )
+}

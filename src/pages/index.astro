@@ -1,0 +1,208 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { STORE, STORE_LINK, art, chapters, game, lord, num, strongholds, troops, url } from '../lib/game'
+
+const sections = [
+  { path: 'guide/', icon: 'map', title: 'New to the realm?', text: 'The first hour, step by step: villagers, goods, the Keep, your first raid.' },
+  { path: 'buildings/', icon: 'castle', title: 'Buildings', text: `All ${game.buildings.length} buildings with every level: costs, build times, health, damage.` },
+  { path: 'troops/', icon: 'army', title: 'Troops', text: `${troops.length} troops — who they hit, how hard, and what they cost to train and improve.` },
+  { path: 'lord/', icon: 'crown', title: 'The Lord', text: `You, on a white charger. ${lord.maxLevel} levels and the Rally! war cry.` },
+  { path: 'strongholds/', icon: 'attack', title: 'Raider Strongholds', text: `${strongholds.length} hand-built fortresses in ${chapters.length} chapters, with their maps and rewards.` },
+  { path: 'keep/', icon: 'star', title: 'The Keep', text: 'What each Keep level costs and unlocks.' },
+  { path: 'ranks/', icon: 'trophy', title: 'Leagues & Emblems', text: 'Trophies, leagues, shields, the realm’s honours and achievements.' },
+  { path: 'market/', icon: 'market', title: 'Market', text: 'Today’s world prices, live — the same for every lord.' },
+  { path: 'gems/', icon: 'gems', title: 'Gems', text: 'Gem packs, the Starter Pack, gifts, invites and what gems buy.' },
+]
+---
+
+<Layout title="Horizon Wiki" description="The field guide to Horizon, the coastal kingdom strategy game: every building, troop, stronghold and league, with numbers straight from the game." bare>
+  <section class="hero" style={`background-image: linear-gradient(180deg, rgba(15,26,53,0.15), rgba(15,26,53,0.55) 70%, var(--page)), url(${art('splash.webp')})`}>
+    <div class="hero-inner">
+      <img class="hero-logo" src={art('logo.webp')} alt="Horizon" width="520" height="223" />
+      <p class="hero-tag">Build a kingdom on the coast. Raise an army. Take the shore back from the Raven raiders — and raid the lords of the realm.</p>
+      <div class="hero-actions">
+        <a class="btn" href={STORE_LINK}>Download Horizon — free</a>
+        <a class="btn blue" href={url('guide/')}>Read the guide</a>
+      </div>
+      <p class="hero-stores">
+        Or straight to <a href={STORE.ios}>the App Store</a> · <a href={STORE.android}>Google Play</a>
+      </p>
+    </div>
+  </section>
+
+  <div class="page" data-pagefind-body>
+    <section class="glance" aria-label="At a glance">
+      <div><strong>{game.buildings.length}</strong><span>buildings</span></div>
+      <div><strong>{troops.length + 1}</strong><span>troops & the Lord</span></div>
+      <div><strong>{strongholds.length}</strong><span>strongholds</span></div>
+      <div><strong>{game.maxKeep}</strong><span>Keep levels</span></div>
+      <div><strong>{strongholds.length * 3}</strong><span>campaign stars</span></div>
+    </section>
+
+    <h2>Explore the wiki</h2>
+    <div class="grid wide">
+      {
+        sections.map((s) => (
+          <a class="card section-card" href={url(s.path)}>
+            <img src={art(`icons/${s.icon}.webp`)} alt="" width="48" height="48" />
+            <div>
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+
+    <div class="home-split">
+      <section class="panel">
+        <h2 style="margin-top: 0">The story so far</h2>
+        <p class="quote">{chapters[0].story}</p>
+        <p>
+          Four chapters, {strongholds.length} strongholds, and at the end of each chapter a raider lord — {chapters.map((c) => c.foe).join(', ')}.
+          <a href={url('strongholds/')}>See every stronghold →</a>
+        </p>
+      </section>
+      <section class="panel">
+        <h2 style="margin-top: 0">The market right now</h2>
+        <p class="small muted">World prices in gold per unit, the same for every lord at this moment.</p>
+        <table class="mini-market" data-base={JSON.stringify(game.market.basePrice)}>
+          <tbody>
+            {
+              (['food', 'wood', 'stone', 'iron'] as const).map((r) => (
+                <tr>
+                  <td>
+                    <img src={art(`icons/${r}.webp`)} alt="" width="22" height="22" /> {r[0].toUpperCase() + r.slice(1)}
+                  </td>
+                  <td class="num" data-price={r}>
+                    {num(game.market.basePrice[r], 2)}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+        <p class="small"><a href={url('market/')}>Charts and market fees →</a></p>
+      </section>
+    </div>
+
+    <p class="tiny muted" style="margin-top: 28px">
+      Built from game version {game.gameVersion?.replace('+', ' (build ') + ')'}. Names and numbers come straight from the game's rules.
+    </p>
+  </div>
+</Layout>
+
+<script>
+  import { worldPrice, type Commodity } from '../lib/market'
+  const base = JSON.parse(document.querySelector<HTMLElement>('[data-base]')?.dataset.base ?? '{}')
+  const paint = () => {
+    for (const td of document.querySelectorAll<HTMLElement>('[data-price]')) {
+      td.textContent = worldPrice(td.dataset.price as Commodity, Date.now(), base).toFixed(2)
+    }
+  }
+  paint()
+  setInterval(paint, 30_000)
+</script>
+
+<style>
+  .hero {
+    background-size: cover;
+    background-position: center 35%;
+    padding: 56px 20px 80px;
+    text-align: center;
+  }
+  .hero-inner {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .hero-logo {
+    width: min(520px, 90%);
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  }
+  .hero-tag {
+    color: #fff;
+    font-size: clamp(17px, 2.4vw, 21px);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+    max-width: 640px;
+    margin: 6px auto 20px;
+    font-weight: 700;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .hero-stores {
+    margin-top: 14px;
+    color: #fff;
+    font-size: 14.5px;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  }
+  .hero-stores a {
+    color: #fff;
+  }
+  .glance {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: -60px;
+    position: relative;
+  }
+  .glance div {
+    background: linear-gradient(180deg, var(--night-2), var(--night));
+    border: 2px solid var(--gold-dark);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    color: #e9e2cf;
+    box-shadow: var(--shadow);
+  }
+  .glance strong {
+    display: block;
+    font-family: var(--display);
+    font-size: 32px;
+    color: var(--gold-light);
+    line-height: 1.1;
+  }
+  .glance span {
+    font-size: 13.5px;
+  }
+  .section-card {
+    flex-direction: row;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .section-card img {
+    flex: none;
+  }
+  .section-card h3 {
+    margin-top: 0;
+  }
+  .home-split {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .mini-market td {
+    border: none;
+    padding: 4px 0;
+  }
+  .mini-market img {
+    vertical-align: middle;
+  }
+  .mini-market td.num {
+    font-family: var(--display);
+    font-size: 18px;
+  }
+  @media (max-width: 900px) {
+    .glance {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .home-split {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

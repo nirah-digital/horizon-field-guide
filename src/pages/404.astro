@@ -1,0 +1,31 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { art, url } from '../lib/game'
+---
+
+<Layout title="Lost at sea" description="This page of the Horizon wiki doesn't exist.">
+  <div class="lost">
+    <img src={art('portraits/maren.webp')} alt="Captain Maren" width="140" height="140" />
+    <h1>Lost at sea, Lord?</h1>
+    <p class="lede">There's nothing on this stretch of the coast. Let's get you back to dry land.</p>
+    <p>
+      <a class="btn" href={url()}>Back to the wiki</a>
+      <a class="btn blue" href={url('search/')}>Search</a>
+    </p>
+  </div>
+</Layout>
+
+<style>
+  .lost {
+    text-align: center;
+    padding: 40px 0;
+  }
+  .lost img {
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    background: #e7d6ac;
+  }
+  .lost .lede {
+    margin: 0 auto 20px;
+  }
+</style>

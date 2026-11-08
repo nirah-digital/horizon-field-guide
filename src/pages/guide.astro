@@ -1,0 +1,173 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { art, buildingArt, buildingById, buildingSlug, lord, troopSlug, troops, url } from '../lib/game'
+
+const b = (id: string) => {
+  const x = buildingById(id)!
+  return { name: x.name, href: url(`buildings/${buildingSlug(x)}/`), img: buildingArt(x, 1) }
+}
+const steps = [
+  ['Build a House', 'It is free, and its villager does all your building. Nothing that takes time can start until you have one.'],
+  ['Build a Farm, and collect its food', 'Tap the harvest bubble when it fills. Farms side by side help each other.'],
+  ['Move the Farm', 'Tap it, drag it, let go — anything can be moved, any time.'],
+  ['Chop a tree', 'Tap it and Gather. Clearing the land gives goods, and now and then a gem.'],
+  ['Build a Quarry by the Stone Cliffs', 'Tap the cliffs and Build mine. Cliffs and hills run out in the end; the forest never does.'],
+  ['Raise your Keep to level 2', 'The Keep unlocks everything else. The guide pays for finishing it at once.'],
+  ['Build a Mine by the Iron Hill', 'Iron needs Keep 2 — that is why the Keep comes first.'],
+  ['Build a Barracks and a Camp', 'Then train five swordsmen in the Army window.'],
+  ['Build a Market and sell 100 wood', 'Goods turn into gold at the world price.'],
+  ['Attack Burnt Landing', 'Your first stronghold: land your company away from the cannon and let them work their way round.'],
+  ['Meet the realm', 'Online raids, trophies, leagues and shields, then your Orders and Awards.'],
+  ['Collect your reward', '250 gems and a 24-hour shield — then connect Google or Apple so your kingdom is never lost.'],
+]
+---
+
+<Layout title="Guide" description="New to Horizon? The first hour step by step, and the basics: goods, villagers, the Keep, your army, battles, stars, strongholds, online raids and shields." crumbs={[['Wiki', ''], ['Guide', 'guide/']]}>
+  <div class="intro">
+    <img src={art('portraits/maren.webp')} alt="Captain Maren" width="120" height="120" />
+    <div>
+      <h1>Welcome to the coast, Lord</h1>
+      <p class="lede">
+        Captain Maren of the coast watch walks every new lord through their first hour, one real action at a time. Here is that hour, and everything after it, in a few minutes'
+        reading.
+      </p>
+    </div>
+  </div>
+
+  <h2>Your first hour</h2>
+  <p>You arrive with a Keep on the shore and the wild land around it — woods, berry bushes, rocks, the Stone Cliffs and the Iron Hill — plus 500 food, 900 wood, 300 stone, 100 iron, 1,000 gold and 250 gems.</p>
+  <ol class="steps">
+    {
+      steps.map(([title, text]) => (
+        <li>
+          <strong>{title}.</strong> {text}
+        </li>
+      ))
+    }
+  </ol>
+
+  <h2>Goods</h2>
+  <div class="goods">
+    {
+      [
+        ['food', 'Food', 'From farms and berry bushes. Kept in granaries and the Keep. Feeds your troops.'],
+        ['wood', 'Wood', 'From sawmills and trees. Kept in storehouses and the Keep.'],
+        ['stone', 'Stone', 'From quarries by the cliffs, and rocks. Walls and defences eat it.'],
+        ['iron', 'Iron', 'From mines by the iron hill, and ore rocks. For armour, siege engines and cannons.'],
+        ['gold', 'Gold', 'From the market, raids and rewards. No limit to how much you keep.'],
+        ['gems', 'Gems', 'From achievements, strongholds and clearing the land. They hurry things along.'],
+      ].map(([icon, name, text]) => (
+        <div class="good">
+          <img src={art(`icons/${icon}.webp`)} alt="" width="40" height="40" />
+          <div>
+            <strong>{name}</strong>
+            <p class="small">{text}</p>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+  <p>Many prices mix goods — a knight costs food, gold and iron. Producers fill their own little store; tap to collect it before raiders do.</p>
+
+  <h2>Villagers and the Keep</h2>
+  <p>
+    Every <a href={b('builderHut').href}>House</a> is home to one villager, and every villager builds, upgrades or clears one thing at a time — so more houses means more at once. The
+    <a href={b('townHall').href}>Keep</a> is the heart of it all: raising it unlocks new buildings, more of each and higher levels, through four ages. <a href={url('keep/')}>What each Keep level brings →</a>
+  </p>
+
+  <h2>Your army</h2>
+  <p>
+    Infantry trains at the <a href={b('barracks').href}>Barracks</a>, riders at the <a href={b('stable').href}>Stable</a>, and rams and trebuchets at the
+    <a href={b('siegeWorkshop').href}>Workshop</a>. Trained troops wait in your <a href={b('armyCamp').href}>Camps</a>, which set how big an army you can march with. The
+    <a href={b('academy').href}>Academy</a> researches stronger levels. From Keep 2, <a href={url('lord/')}>the Lord</a> rides with you — up to level {lord.maxLevel}.
+    <a href={url('troops/')}>All {troops.length} troops →</a>
+  </p>
+
+  <h2>Battles and stars</h2>
+  <ul>
+    <li><strong>30 seconds to look</strong> before the fighting starts, then <strong>3 minutes</strong> to win.</li>
+    <li>Tap or hold on open ground to land troops. Each troop goes for its favourite targets — <a href={url(`troops/${troopSlug(troops[0])}/`)}>swordsmen</a> the nearest thing, scouts the stores, knights the defences, rams the walls.</li>
+    <li>
+      <strong>Three stars:</strong> one for destroying half the kingdom, one for the Keep, one for all of it.
+    </li>
+    <li>Sound the Lord's <strong>Rally!</strong> at the right moment: it heals and hastens everyone around him, once a battle.</li>
+  </ul>
+
+  <h2>Three ways to fight</h2>
+  <div class="grid wide">
+    <a class="card" href={url('strongholds/')}>
+      <h3 style="margin-top:0">Raider Strongholds</h3>
+      <p>24 hand-built puzzles with a fixed company. Your own army stays home; every star pays once.</p>
+    </a>
+    <a class="card" href={url('ranks/')}>
+      <h3 style="margin-top:0">Online raids</h3>
+      <p>Raid real lords near your trophies, win their goods and trophies, climb the leagues. They raid you back.</p>
+    </a>
+    <div class="card">
+      <h3 style="margin-top:0">Raids on you</h3>
+      <p>From Keep 2, other lords can raid you for your goods. Your defences fight them on their own — check the defence log for the replay, and collect often.</p>
+    </div>
+  </div>
+
+  <h2>Keep your kingdom safe</h2>
+  <ul>
+    <li><strong>Connect Google or Apple</strong> in Settings, so your kingdom lives in the cloud and comes back on a new phone.</li>
+    <li><strong>Shields:</strong> a raid that wrecks 30% of your kingdom gives 12 hours of peace; 90%, 16 hours.</li>
+    <li><strong>Walls and storages:</strong> raiders take a share of what is stored. Collect often and keep storages behind your walls.</li>
+  </ul>
+
+  <h2>Every day in the realm</h2>
+  <ul>
+    <li><strong>Daily gift:</strong> tap <em>Daily</em> on the home screen for the treasurer's chest — a seven-day streak that grows with your Keep. <a href={url('gems/#daily')}>The gifts →</a></li>
+    <li><strong>Orders:</strong> the steward sets three small tasks a day, each with gems and gold.</li>
+    <li><strong>Events:</strong> now and then the realm celebrates — double XP, richer raids, faster building or training. A banner on the home screen says what's on and for how long.</li>
+    <li><strong>News:</strong> word from the team pops up when you open the game; read it again any time in <strong>Settings › About › News</strong>.</li>
+    <li><strong>Language:</strong> Horizon speaks English and Arabic — <strong>Settings › Display › Language</strong>.</li>
+  </ul>
+
+  <h2>The realm</h2>
+  <p>
+    Chat with every lord in the realm chat — be kind, report anyone who isn't. Need a hand? <strong>Settings › About › Write to the team</strong> sends a letter straight to the
+    people who make Horizon; the answer comes back to your phone.
+  </p>
+
+  <div class="callout">
+    <strong>Ready?</strong> <a href={url('buildings/')}>Plan your buildings</a>, <a href={url('troops/')}>pick your army</a>, or <a href={url('strongholds/')}>study the first stronghold</a>.
+  </div>
+</Layout>
+
+<style>
+  .intro {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+  }
+  .intro img {
+    border-radius: 50%;
+    background: #e7d6ac;
+    border: 3px solid var(--gold);
+    flex: none;
+  }
+  .steps li {
+    margin: 6px 0;
+  }
+  .goods {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px 18px;
+  }
+  .good {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .good p {
+    margin: 0;
+  }
+  @media (max-width: 700px) {
+    .intro {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>

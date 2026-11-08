@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Check, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Audit production dependencies
+        run: node scripts/audit.mjs
+      - name: Tests (formulas match the game, art is complete)
+        run: npm test
+      - name: Build (astro check + astro build + pagefind)
+        run: npm run build

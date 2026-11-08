@@ -1,0 +1,8 @@
+[
+  {
+    "advisory": "GHSA-ch52-4w7c-c8xp",
+    "package": "http-cache-semantics (via astro)",
+    "why": "max-stale handling in a server-side HTTP cache; the wiki is a static build served by nginx, astro's cache code never runs in production. No patched version yet (npm's only fix is downgrading astro to 2.x).",
+    "until": "2026-11-02"
+  }
+]

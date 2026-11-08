@@ -1,0 +1,152 @@
+---
+import Cost from '../components/Cost.astro'
+import Layout from '../layouts/Layout.astro'
+import { art, buildingArt, buildingById, buildingSlug, buildings, duration, keepLevels, lord, maxLevelAtKeep, num, url } from '../lib/game'
+
+const keep = buildingById('townHall')!
+const caps = lord.capByKeep as Record<string, number>
+const rows = keepLevels.map((k) => {
+  const l = keep.levels[k - 1]
+  const newBuildings = buildings.filter((b) => b.id !== 'townHall' && b.unlockKeep === k)
+  const more = buildings.filter((b) => b.id !== 'townHall' && k > 1 && b.countByKeep[k - 1] > b.countByKeep[k - 2] && b.unlockKeep < k)
+  const higher = buildings.filter((b) => b.id !== 'townHall' && k > 1 && maxLevelAtKeep(b, k) > maxLevelAtKeep(b, k - 1) && b.unlockKeep < k)
+  return { k, l, newBuildings, more, higher }
+})
+const stages = [
+  { name: 'The first Keep', keeps: '1', text: 'A Keep on a wild shore. Houses, farms, sawmills and quarries, a barracks and a camp — and two cannons to keep the gulls honest.' },
+  { name: 'Walls and iron', keeps: '2–3', text: 'Walls, the market, mines, towers and the ballista; from Keep 3 the stable, academy, mortar and kegs. The Lord joins you, and from now on sea raiders beach their longships on your sand.' },
+  { name: 'Siege and the Bastion', keeps: '4–5', text: 'The Workshop builds rams and trebuchets, and the Bastion (from Keep 5) fires its volleys at three raiders at once.' },
+  { name: 'The High Keep', keeps: '6', text: 'The highest Keep in this version: every building at its best, and the Lord at level 20. New Keep levels come with updates.' },
+]
+---
+
+<Layout title="The Keep" description="What each Keep level costs and unlocks in Horizon: new buildings, more of each, higher levels and the Lord's cap." crumbs={[['Wiki', ''], ['The Keep', 'keep/']]} image={buildingArt(keep)}>
+  <div class="intro">
+    <img src={buildingArt(keep)} alt="The Keep" width="220" />
+    <div>
+      <h1>The Keep</h1>
+      <p class="lede">
+        Everything grows from the <a href={url(`buildings/${buildingSlug(keep)}/`)}>Keep</a>. Each level you raise it to unlocks new buildings, more of the ones you have, higher levels for
+        all of them.
+      </p>
+    </div>
+  </div>
+
+  <div class="grid wide">
+    {
+      stages.map((a) => (
+        <div class="card">
+          <h3 style="margin-top:0">{a.name}</h3>
+          <p class="small">
+            <strong>Keep {a.keeps}.</strong> {a.text}
+          </p>
+        </div>
+      ))
+    }
+  </div>
+
+  <h2>Level by level</h2>
+  {
+    rows.map(({ k, l, newBuildings, more, higher }) => (
+      <section class="panel keep-level">
+        <h3>
+          Keep {k}
+        </h3>
+        <p class="small">
+          {k === 1 ? (
+            'Where every kingdom starts.'
+          ) : (
+            <>
+              Upgrade: <Cost cost={l.cost} />, {duration(l.seconds)}.{' '}
+            </>
+          )}
+          Health {num(l.hp)}; stores {num(l.capacity)} of each good. Lord up to level {caps[String(k)] || '—'}.
+        </p>
+        {newBuildings.length > 0 && (
+          <p>
+            <strong>New:</strong>{' '}
+            {newBuildings.map((b, i) => (
+              <>
+                {i > 0 && ', '}
+                <a href={url(`buildings/${buildingSlug(b)}/`)}>{b.name}</a>
+              </>
+            ))}
+            {k === lord.unlockKeep && (
+              <>
+                , and <a href={url('lord/')}>the Lord</a>
+              </>
+            )}
+          </p>
+        )}
+        {more.length > 0 && (
+          <p>
+            <strong>More of:</strong> {more.map((b) => `${b.name} (${b.countByKeep[k - 1]})`).join(', ')}
+          </p>
+        )}
+        {higher.length > 0 && (
+          <p class="small muted">
+            <strong>Higher levels for:</strong> {higher.map((b) => `${b.name} (up to ${maxLevelAtKeep(b, k)})`).join(', ')}
+          </p>
+        )}
+      </section>
+    ))
+  }
+
+  <h2>How many of each, by Keep level</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Building</th>
+          {keepLevels.map((k) => <th class="num">Keep {k}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          buildings
+            .filter((b) => b.id !== 'townHall')
+            .map((b) => (
+              <tr>
+                <td>
+                  <a href={url(`buildings/${buildingSlug(b)}/`)}>{b.name}</a>
+                </td>
+                {keepLevels.map((k) => (
+                  <td class="num">{b.countByKeep[k - 1] ? `${b.countByKeep[k - 1]} × L${maxLevelAtKeep(b, k)}` : '—'}</td>
+                ))}
+              </tr>
+            ))
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">“2 × L5” = you can have two, up to level 5.</p>
+  <p class="small"><img src={art('icons/star.webp')} alt="" width="16" height="16" style="vertical-align:middle" /> Raising the Keep to 2, 4 and 6 also pays the <em>Master of the Keep</em> achievement — see <a href={url('ranks/#achievements')}>achievements</a>.</p>
+</Layout>
+
+<style>
+  .intro {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .intro img {
+    flex: none;
+    filter: drop-shadow(0 6px 10px rgba(43, 29, 16, 0.25));
+  }
+  .keep-level {
+    margin: 12px 0;
+  }
+  .keep-level h3 {
+    margin-top: 0;
+  }
+  .keep-level p {
+    margin: 4px 0;
+  }
+  @media (max-width: 700px) {
+    .intro {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>

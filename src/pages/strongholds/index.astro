@@ -1,0 +1,94 @@
+---
+import Cost from '../../components/Cost.astro'
+import Layout from '../../layouts/Layout.astro'
+import { ROMAN, art, chapters, strongholdSlug, strongholds, troopByKey, url } from '../../lib/game'
+
+const total = (s: (typeof strongholds)[number]) => {
+  const t: Record<string, number> = {}
+  for (const r of s.rewards) for (const [k, v] of Object.entries(r)) t[k] = (t[k] ?? 0) + (v as number)
+  return t
+}
+---
+
+<Layout title="Raider Strongholds" description={`The Horizon campaign: ${strongholds.length} hand-built strongholds in ${chapters.length} chapters against the Raven raiders — armies, maps, rewards and hints.`} crumbs={[['Wiki', ''], ['Strongholds', 'strongholds/']]}>
+  <h1>Raider Strongholds</h1>
+  <p class="lede">
+    The Ravens have taken the coast. In {strongholds.length} hand-built strongholds you attack with a fixed company — your own army stays home — and every stronghold is a
+    puzzle with a trick to it. Up to three stars each, {strongholds.length * 3} in all; the first time you win each star, its share of the chest is yours.
+  </p>
+
+  {
+    chapters.map((c, ci) => (
+      <section class="chapter">
+        <h2 id={`chapter-${ci + 1}`}>
+          {ROMAN[ci]}. {c.title}
+        </h2>
+        <p class="quote">{c.story}</p>
+        <p class="small muted">The chapter ends with {c.foe}.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="num">#</th>
+                <th>Stronghold</th>
+                <th>Your company</th>
+                <th class="num">Keep</th>
+                <th>All three stars</th>
+              </tr>
+            </thead>
+            <tbody>
+              {strongholds
+                .filter((s) => s.chapter === ci)
+                .map((s) => (
+                  <tr>
+                    <td class="num">{s.number}</td>
+                    <td>
+                      <a href={url(`strongholds/${strongholdSlug(s)}/`)}>
+                        <strong>{s.name}</strong>
+                      </a>
+                      {s.boss && <span class="chip gold">{c.foe}</span>}
+                    </td>
+                    <td>
+                      <span class="army">
+                        {Object.entries(s.army).map(([k, n]) => {
+                          const t = troopByKey(k)
+                          return (
+                            <span class="army-unit" title={`${n} × ${t?.name}`}>
+                              <img src={art(`portraits/${t?.key}.webp`)} alt={t?.name ?? k} width="28" height="28" loading="lazy" />×{n as number}
+                            </span>
+                          )
+                        })}
+                      </span>
+                    </td>
+                    <td class="num">{s.keep}</td>
+                    <td>
+                      <Cost cost={total(s)} />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ))
+  }
+</Layout>
+
+<style>
+  .army {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .army-unit {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .army-unit img {
+    border-radius: 50%;
+    background: #e7d6ac;
+  }
+</style>

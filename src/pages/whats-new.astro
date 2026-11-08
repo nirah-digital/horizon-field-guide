@@ -1,0 +1,157 @@
+---
+import Layout from '../layouts/Layout.astro'
+---
+
+<Layout
+  title="What's new"
+  description="What changed in each version of Horizon: new buildings and troops, fixes and balance, straight from the team."
+  crumbs={[['Wiki', ''], ["What's new", 'whats-new/']]}
+>
+  <h1>What's new</h1>
+  <p class="lede">Every version of Horizon and what it brought, as the team publishes it.</p>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" data-lang="en" aria-pressed="true">English</button>
+    <button type="button" data-lang="ar" aria-pressed="false">العربية</button>
+  </div>
+  <div id="notes" class="notes" aria-live="polite">
+    <p class="muted">Loading the notes…</p>
+  </div>
+  <noscript><p>The notes load from the game's servers and need JavaScript.</p></noscript>
+</Layout>
+
+<script>
+  // Release notes the team published from the admin console (Builds ›
+  // Publish to wiki): Firestore releaseNotes/{version}, readable by anyone.
+  const URL_NOTES =
+    'https://firestore.googleapis.com/v1/projects/nirah-horizon/databases/(default)/documents/releaseNotes?pageSize=100'
+
+  type Value = { stringValue?: string; integerValue?: string; doubleValue?: number; arrayValue?: { values?: Value[] } }
+  interface Note {
+    version: string
+    build: number
+    dateMs: number
+    title: string
+    notesEn: string
+    notesAr: string
+    highlights: string[]
+  }
+
+  const str = (v?: Value) => v?.stringValue ?? ''
+  const num = (v?: Value) => Number(v?.integerValue ?? v?.doubleValue ?? 0)
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+  const paragraphs = (s: string) =>
+    s
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) =>
+        /^[-•]/m.test(p)
+          ? `<ul>${p
+              .split('\n')
+              .map((l) => l.replace(/^[-•]\s*/, '').trim())
+              .filter(Boolean)
+              .map((l) => `<li>${esc(l)}</li>`)
+              .join('')}</ul>`
+          : `<p>${esc(p).replace(/\n/g, '<br>')}</p>`,
+      )
+      .join('')
+
+  let notes: Note[] = []
+  let lang: 'en' | 'ar' = 'en'
+
+  function render() {
+    const box = document.getElementById('notes')!
+    if (notes.length === 0) {
+      box.innerHTML = '<p class="muted">No notes published yet.</p>'
+      return
+    }
+    const date = new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    box.innerHTML = notes
+      .map((n) => {
+        const text = lang === 'ar' && n.notesAr.trim() ? n.notesAr : n.notesEn
+        const body = text.trim() ? paragraphs(text) : `<ul>${n.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul>`
+        return `<article class="panel note" ${lang === 'ar' ? 'dir="rtl" lang="ar"' : ''}>
+          <header><h2>${esc(n.version)}</h2><span class="muted">${n.dateMs ? date.format(new Date(n.dateMs)) : ''}</span></header>
+          ${n.title ? `<p class="note-title">${esc(n.title)}</p>` : ''}
+          ${body}
+        </article>`
+      })
+      .join('')
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('.lang button').forEach((b) =>
+    b.addEventListener('click', () => {
+      lang = b.dataset.lang === 'ar' ? 'ar' : 'en'
+      document.querySelectorAll('.lang button').forEach((o) => o.setAttribute('aria-pressed', String(o === b)))
+      render()
+    }),
+  )
+
+  fetch(URL_NOTES)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then((j: { documents?: { fields: Record<string, Value> }[] }) => {
+      notes = (j.documents ?? [])
+        .map(({ fields: f }) => ({
+          version: str(f.version),
+          build: num(f.build),
+          dateMs: num(f.dateMs),
+          title: str(f.title),
+          notesEn: str(f.notesEn),
+          notesAr: str(f.notesAr),
+          highlights: (f.highlights?.arrayValue?.values ?? []).map(str),
+        }))
+        .sort((a, b) => b.dateMs - a.dateMs || b.build - a.build)
+      render()
+    })
+    .catch(() => {
+      document.getElementById('notes')!.innerHTML = '<p class="muted">The notes could not be loaded. Try again in a moment.</p>'
+    })
+</script>
+
+<style>
+  .lang {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 16px;
+  }
+  .lang button {
+    font: inherit;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--walnut);
+    background: transparent;
+    color: var(--walnut);
+    cursor: pointer;
+  }
+  .lang button[aria-pressed='true'] {
+    background: var(--walnut);
+    color: var(--page);
+  }
+  .lang button:focus-visible {
+    outline: 2px solid var(--walnut);
+    outline-offset: 2px;
+  }
+  .notes {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 860px;
+  }
+  .note {
+    padding: 14px 20px;
+  }
+  .note header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .note h2 {
+    margin: 0;
+  }
+  .note-title {
+    font-weight: 600;
+    margin: 6px 0;
+  }
+</style>

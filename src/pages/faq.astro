@@ -1,0 +1,63 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { STORE, url } from '../lib/game'
+
+const faq: [string, string][] = [
+  ['Is Horizon free?', 'Yes. Everything can be won by playing; gems only hurry things along. There are gem packs and a one-time Starter Pack in the shop if you want them.'],
+  ['Which phones does it run on?', `iPhone and iPad from the <a href="${STORE.ios}">App Store</a>, and Android from <a href="${STORE.android}">Google Play</a>.`],
+  ['Is Horizon in Arabic?', 'Yes — English and Arabic, right to left included. Switch in <strong>Settings › Display › Language</strong>.'],
+  ['Where do I find the news and events?', 'News pops up once when you open the game, and stays in <strong>Settings › About › News</strong>. While an event is on — double XP, richer raids, faster building — a banner on the home screen shows it and the time left.'],
+  ['What is the daily gift?', `A chest from the treasurer every day: tap <strong>Daily</strong> on the home screen. Seven days make a streak, each day bigger; miss one and it starts over. <a href="${url('gems/#daily')}">See the gifts</a>.`],
+  ['Do I need an internet connection?', 'Yes. Since version 0.18 your kingdom lives on the realm’s servers, which keep every lord honest: raids, trophies and the boards are judged there, not on phones. If the connection drops, the game waits with “Reconnecting to the realm…” and nothing you did is lost. Your kingdom keeps producing while you are away.'],
+  ['How do I keep my kingdom if I change phones?', 'Connect your Google or Apple account in Settings. Your kingdom is kept on the realm’s servers and comes back when you sign in on the new phone.'],
+  ['I lost a lot of goods to a raid. Why?', `Raiders take half of what sits uncollected in your producers and a share of your storages, the Keep and your gold. Collect often and keep storages behind walls. A big raid gives you a shield — see <a href="${url('ranks/#shields')}">shields</a>.`],
+  ['Why can’t I build another of something?', `Each Keep level allows a certain number of each building, and a highest level. <a href="${url('keep/')}">The table is here</a> — raise the Keep for more.`],
+  ['How do the leagues work?', `By trophies, won and lost in online raids. Each league has tiers III, II and I, and every raid you win pays a league bonus on top of the loot. <a href="${url('ranks/')}">Leagues, tiers, the bonus and the exact formula</a>.`],
+  ['Who will I raid, and who raids me?', `Lords near your trophies whose Keep is within one level of yours. From Keep 2 they can raid you too — never while you're shielded or playing. <a href="${url('ranks/#raids')}">More</a>.`],
+  ['Are all the lords real players?', 'Most are. Some lords in the realm are run by the game, so there is always someone to raid and the realm stays lively. They play by the same rules as everyone — and they never take an emblem, season gems or any other reward from a player.'],
+  ['What are events?', 'Now and then the team runs an event: double XP, richer raids, faster building — or a challenge with tasks that pay event tokens, a shop that takes them, an event stronghold with its own board, and troops lent to every Keep. Tap the event banner on the home screen to see what is on.'],
+  ['When do seasons end?', `On the last Monday of each month, 08:00 Riyadh time. The top places win their emblems, every league earns gems, and trophies above 2,000 settle halfway back to 2,000. <a href="${url('ranks/#seasons')}">Seasons</a>.`],
+  ['What is the Founder emblem?', 'A thank-you for the lords who joined the realm in its first season. It appears on your profile once you reach level 3.'],
+  ['Who are the Ravens?', `The raiders who took the coast — Red Hagga, Baron Ulric Fenmoor, Brask Ironjaw and Corvane the Raven King. <a href="${url('strongholds/')}">Take it back</a>.`],
+  ['I bought gems but didn’t get them.', 'Open the game again while online: the store keeps offering an unfinished purchase until it has been credited. If the gems still don’t arrive, write to the team (below) with the date of the purchase.'],
+  ['How do I report someone in the chat?', 'Tap their message and report it. The team reads every report and deals with lords who spoil the chat for others.'],
+  ['How do I delete my kingdom?', `Settings › Account › Clear all data erases your kingdom, your account and everything kept for it on our servers. Can't open the game? <a href="${url('delete-account/')}">Ask us to delete it</a>.`],
+  ['How do I reach the team?', `In the game: <strong>Settings › About › Write to the team</strong> — every lord gets an answer, straight to their phone. Or see <a href="https://nirah.co/legal/support">support</a>.`],
+]
+---
+
+<Layout title="FAQ" description="Answers to common questions about Horizon: the internet connection, keeping your kingdom on a new phone, raids, leagues, purchases, chat and reaching the team." crumbs={[['Wiki', ''], ['FAQ', 'faq/']]}>
+  <h1>Questions, answered</h1>
+  <p class="lede">The things lords ask the team most. Can't find yours? Write to us from the game — every letter gets an answer.</p>
+  <div class="faq">
+    {
+      faq.map(([q, a]) => (
+        <details class="panel">
+          <summary>{q}</summary>
+          <p set:html={a} />
+        </details>
+      ))
+    }
+  </div>
+</Layout>
+
+<style>
+  .faq {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 860px;
+  }
+  .faq details {
+    padding: 12px 18px;
+  }
+  .faq summary {
+    cursor: pointer;
+    font-family: var(--display);
+    font-size: 19px;
+    color: var(--walnut);
+  }
+  .faq p {
+    margin: 10px 0 2px;
+  }
+</style>

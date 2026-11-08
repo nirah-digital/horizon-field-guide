@@ -1,0 +1,143 @@
+---
+import Cost from '../../components/Cost.astro'
+import Layout from '../../layouts/Layout.astro'
+import Looks from '../../components/Looks.astro'
+import { PREF, type Troop, art, buildingById, buildingName, buildingSlug, duration, num, troopLooks, troopSlug, troopTraits, troops, url } from '../../lib/game'
+
+export function getStaticPaths() {
+  return troops.map((t) => ({ params: { slug: troopSlug(t) }, props: { t } }))
+}
+
+const { t } = Astro.props as { t: Troop }
+const trainer = buildingById(t.trainer)!
+const max = t.levels[t.levels.length - 1]
+const i = troops.indexOf(t)
+const prev = troops[i - 1]
+const next = troops[i + 1]
+const academy = buildingById('academy')
+---
+
+<Layout
+  title={t.name}
+  description={`${t.name} in Horizon: ${t.description} Trained at the ${trainer.name}; ${t.levels.length} levels.`}
+  crumbs={[['Wiki', ''], ['Troops', 'troops/']]}
+  image={art(`cards/${t.key}.webp`)}
+>
+  <div class="two-col">
+    <article>
+      <h1>{t.name}</h1>
+      <p class="lede">{t.description}</p>
+      <div class="chips">{troopTraits(t).map((x) => <span class="chip gold">{x}</span>)}</div>
+
+      <p>
+        Trained at the <a href={url(`buildings/${buildingSlug(trainer)}/`)}>{trainer.name}</a>
+        {t.trainerLevel > 1 ? ` from level ${t.trainerLevel}` : ''} in {duration(t.trainSeconds)}, and takes {t.space}
+        {t.space === 1 ? ' space' : ' spaces'} in your Camps. It goes for <strong>{PREF[t.pref].toLowerCase()}</strong>
+        {t.prefMultiplier > 1 ? `, and hits those ${t.prefMultiplier} times as hard` : ''}.
+        {t.healer && ' Instead of attacking, it heals every ally around it.'}
+        {t.suicide && ' It blows itself up on its first strike, hurting everything in the blast.'}
+      </p>
+
+      <h2>Levels</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">Level</th>
+              <th class="num">Health</th>
+              <th class="num">{t.healer ? 'Heals' : 'Damage'}</th>
+              <th class="num">{t.healer ? 'Heal / s' : 'Per second'}</th>
+              <th>Training cost</th>
+              <th>Research</th>
+              <th class="num">Research time</th>
+              <th class="num">Academy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              t.levels.map((l) => (
+                <tr>
+                  <td class="num">
+                    <strong>{l.level}</strong>
+                  </td>
+                  <td class="num">{num(l.hp)}</td>
+                  <td class="num">{num(l.damage, 1)}</td>
+                  <td class="num">{num(l.dps, 1)}</td>
+                  <td>
+                    <Cost cost={l.trainCost} />
+                  </td>
+                  <td>
+                    <Cost cost={l.researchCost} free="—" />
+                  </td>
+                  <td class="num">{l.researchSeconds ? duration(l.researchSeconds) : '—'}</td>
+                  <td class="num">{l.academy || '—'}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">
+        Each level is researched once at the {academy ? <a href={url(`buildings/${buildingSlug(academy)}/`)}>Academy</a> : 'Academy'} and makes every {t.name.toLowerCase()} you train stronger. A higher level also costs a little more to
+        train.
+      </p>
+
+      <Looks kind="troop" items={troopLooks(t)} />
+
+      <nav class="pager">
+        {prev ? <a href={url(`troops/${troopSlug(prev)}/`)}>← {prev.name}</a> : <a href={url('lord/')}>← The Lord</a>}
+        {next ? <a href={url(`troops/${troopSlug(next)}/`)}>{next.name} →</a> : <span />}
+      </nav>
+    </article>
+
+    <aside class="panel infobox">
+      <img class="card-img" src={art(`cards/${t.key}.webp`)} alt={t.name} width="360" height="480" />
+      <dl class="facts">
+        <dt>Trained at</dt>
+        <dd>
+          {buildingName(t.trainer)}
+          {t.trainerLevel > 1 ? ` ${t.trainerLevel}` : ''}
+        </dd>
+        <dt>Training</dt>
+        <dd>{duration(t.trainSeconds)}</dd>
+        <dt>Space</dt>
+        <dd>{t.space}</dd>
+        <dt>Speed</dt>
+        <dd>{t.speed} tiles/s</dd>
+        <dt>Range</dt>
+        <dd>
+          {t.range} tiles{t.ranged ? ' (ranged)' : ''}
+        </dd>
+        <dt>Strikes every</dt>
+        <dd>{t.attackInterval}s</dd>
+        {
+          t.splash > 0 && (
+            <>
+              <dt>{t.healer ? 'Heals within' : 'Blast'}</dt>
+              <dd>{t.splash} tiles</dd>
+            </>
+          )
+        }
+        <dt>Health at max</dt>
+        <dd>{num(max.hp)}</dd>
+        <dt>Levels</dt>
+        <dd>{t.levels.length}</dd>
+      </dl>
+    </aside>
+  </div>
+</Layout>
+
+<style>
+  .card-img {
+    width: 100%;
+    border-radius: 10px;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 36px;
+    font-weight: 700;
+  }
+</style>

@@ -1,0 +1,200 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { art, buildingById, buildingSlug, game, num, url } from '../lib/game'
+import { COMMODITIES } from '../lib/market'
+
+const market = buildingById('market')!
+const label = (r: string) => r[0].toUpperCase() + r.slice(1)
+---
+
+<Layout title="Market" description="Horizon's live market: one price for food, wood, stone and iron across the realm, moved every minute by every lord's trading — the merchants' spread and daily limits at each Market level." crumbs={[['Wiki', ''], ['Market', 'market/']]}>
+  <h1>The realm's market</h1>
+  <p class="lede">
+    One price for each good, for the whole realm, moving every minute: when lords sell, prices fall; when they buy, prices rise. Your
+    <a href={url(`buildings/${buildingSlug(market)}/`)}>Market</a>'s merchants trade for you — and fill your standing orders even while you're away.
+  </p>
+
+  <div class="markets" data-base={JSON.stringify(game.market.basePrice)}>
+    {
+      COMMODITIES.map((r) => (
+        <section class="panel price" data-res={r}>
+          <header>
+            <img src={art(`icons/${r}.webp`)} alt="" width="40" height="40" />
+            <div>
+              <h2>{label(r)}</h2>
+              <span class="muted small">usually about {num(game.market.basePrice[r], 1)} gold</span>
+            </div>
+            <strong class="now" data-now>{num(game.market.basePrice[r], 2)}</strong>
+          </header>
+          <svg class="spark" viewBox="0 0 320 90" preserveAspectRatio="none" role="img" aria-label={`${label(r)} price, last 24 hours`}>
+            <path class="area" d="" />
+            <path class="line" d="" />
+            <line class="cursor" x1="0" x2="0" y1="0" y2="90" />
+          </svg>
+          <div class="spark-foot muted tiny">
+            <span>24 h ago</span>
+            <span data-tip>&nbsp;</span>
+            <span>now</span>
+          </div>
+        </section>
+      ))
+    }
+  </div>
+  <p class="small muted" data-source>Gold per unit, before the merchants' spread — live from the realm, updated every minute.</p>
+
+  <h2>How prices move</h2>
+  <ul>
+    <li><strong>The realm's trading.</strong> Every minute, what all lords bought and sold moves each price: {num(game.market.flowImpactPer100k * 100)}% of its usual price for every 100,000 more bought than sold (or sold than bought).</li>
+    <li><strong>The tide.</strong> Between trades a price drifts back toward a gentle daily tide (a gap halves in about 40 minutes).</li>
+    <li><strong>Limits.</strong> A price never falls below {num(game.market.floor * 100)}% or climbs above {num(game.market.ceiling * 100)}% of its usual price.</li>
+    <li><strong>Big orders.</strong> Your own order moves the price against itself as it fills — about {num(game.market.slipPer1000 * 50, 1)}% off the price on average for every 1,000 — so buying big and selling straight back always loses.</li>
+    <li><strong>Gold has no store.</strong> There is no limit to the gold you keep, but raiders can carry off a tenth of it.</li>
+  </ul>
+
+  <h2>The merchants' spread and daily limit</h2>
+  <p>
+    The merchants buy a little under the price and sell a little over it — half the spread each way. They also buy only so many goods from you each day
+    (UTC); buying from them has no limit. A bigger Market does better on both.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Market level</th>
+          {game.market.spreadByLevel.slice(1).map((_, i) => <th class="num">{i + 1}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Spread</td>
+          {game.market.spreadByLevel.slice(1).map((f) => <td class="num">{num(f * 100, 1)}%</td>)}
+        </tr>
+        <tr>
+          <td>Goods they buy from you a day</td>
+          {game.market.spreadByLevel.slice(1).map((_, i) => <td class="num">{num(game.market.sellAllowancePerLevel * (i + 1))}</td>)}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Standing orders</h2>
+  <p>
+    Tell the merchants to sell a good when your storage is over a level and the price is good, or to buy when you're running low and it's cheap. The realm keeps
+    your orders and fills them when the price crosses them — every 20 minutes at most, even while you're away.
+  </p>
+</Layout>
+
+<script>
+  import { history, worldPrice, type Commodity } from '../lib/market'
+
+  // Live prices: market/now, posted every minute by the game's server and
+  // readable by anyone; the tide formula stands in if it can't be reached.
+  const URL_NOW = 'https://firestore.googleapis.com/v1/projects/nirah-horizon/databases/(default)/documents/market/now'
+  const root = document.querySelector<HTMLElement>('[data-base]')!
+  const base = JSON.parse(root.dataset.base ?? '{}')
+  const W = 320
+  const H = 90
+  type V = { doubleValue?: number; integerValue?: string; arrayValue?: { values?: V[] }; mapValue?: { fields?: Record<string, V> } }
+  const n = (v?: V) => Number(v?.doubleValue ?? v?.integerValue ?? 0)
+  let live: { prices: Record<string, number>; hist: Record<string, number[]> } | null = null
+
+  async function load() {
+    try {
+      const r = await fetch(URL_NOW)
+      if (!r.ok) throw new Error(String(r.status))
+      const f = ((await r.json()) as { fields: Record<string, V> }).fields
+      const prices = Object.fromEntries(Object.entries(f.prices?.mapValue?.fields ?? {}).map(([k, v]) => [k, n(v)]))
+      const hist = Object.fromEntries(Object.entries(f.hist?.mapValue?.fields ?? {}).map(([k, v]) => [k, (v.arrayValue?.values ?? []).map(n)]))
+      live = { prices, hist }
+    } catch {
+      live = null
+      document.querySelector('[data-source]')!.textContent = "Gold per unit, before the merchants' spread — the realm couldn't be reached, so this is the tide the prices drift to."
+    }
+    draw()
+  }
+
+  function draw() {
+    const now = Date.now()
+    for (const card of document.querySelectorAll<HTMLElement>('[data-res]')) {
+      const r = card.dataset.res as Commodity
+      const lp = live?.prices[r]
+      const pts = lp ? [...(live!.hist[r] ?? []), lp] : history(r, now, base)
+      if (pts.length < 2) pts.unshift(pts[0] ?? base[r])
+      const lo = Math.min(...pts) * 0.98
+      const hi = Math.max(...pts) * 1.02
+      const xy = pts.map((p, i) => [(i / (pts.length - 1)) * W, H - ((p - lo) / (hi - lo)) * H] as const)
+      const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+      card.querySelector('.line')!.setAttribute('d', line)
+      card.querySelector('.area')!.setAttribute('d', `${line} L${W},${H} L0,${H} Z`)
+      card.querySelector('[data-now]')!.textContent = (lp ?? worldPrice(r, now, base)).toFixed(2)
+      const svg = card.querySelector<SVGSVGElement>('svg')!
+      const cursor = card.querySelector<SVGLineElement>('.cursor')!
+      const tip = card.querySelector<HTMLElement>('[data-tip]')!
+      svg.onpointermove = (e) => {
+        const box = svg.getBoundingClientRect()
+        const f = Math.min(1, Math.max(0, (e.clientX - box.left) / box.width))
+        const i = Math.round(f * (pts.length - 1))
+        const at = new Date(now - (pts.length - 1 - i) * ((24 * 3600000) / Math.max(1, pts.length - 1)))
+        cursor.setAttribute('x1', String(xy[i][0]))
+        cursor.setAttribute('x2', String(xy[i][0]))
+        cursor.style.opacity = '1'
+        tip.textContent = `${at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${pts[i].toFixed(2)} gold`
+      }
+      svg.onpointerleave = () => {
+        cursor.style.opacity = '0'
+        tip.innerHTML = '&nbsp;'
+      }
+    }
+  }
+  load()
+  setInterval(load, 60_000)
+</script>
+
+<style>
+  .markets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .price header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .price h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+  .now {
+    margin-left: auto;
+    font-family: var(--display);
+    font-size: 30px;
+    color: var(--walnut);
+  }
+  .spark {
+    width: 100%;
+    height: 90px;
+    margin-top: 10px;
+    touch-action: none;
+  }
+  .spark .line {
+    fill: none;
+    stroke: var(--royal);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: round;
+  }
+  .spark .area {
+    fill: rgba(47, 95, 179, 0.1);
+  }
+  .spark .cursor {
+    stroke: var(--ink-soft);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+  }
+  .spark-foot {
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
